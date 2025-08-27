@@ -2,15 +2,21 @@ const express = require("express");
 const router = express.Router();
 const { upload, uploadToS3, deleteFromS3 } = require("../config/uploadS3");
 const BgImgCarousel = require("../models/bgimgcarousel");
+const adminAuth = require("../middleware/adminAuth");
 
-// Get all
+// ✅ GET all (public)
 router.get("/", async (req, res) => {
-  const images = await BgImgCarousel.find();
-  res.json(images);
+  try {
+    const images = await BgImgCarousel.find();
+    res.json(images);
+  } catch (err) {
+    console.error("Error fetching images:", err);
+    res.status(500).json({ error: "Failed to fetch images" });
+  }
 });
 
-// Upload new image
-router.post("/", upload.single("image"), async (req, res) => {
+// ✅ Upload new image (admin only)
+router.post("/", adminAuth, upload.single("image"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
@@ -30,9 +36,8 @@ router.post("/", upload.single("image"), async (req, res) => {
   }
 });
 
-
-// Delete
-router.delete("/:id", async (req, res) => {
+// ✅ Delete image (admin only)
+router.delete("/:id", adminAuth, async (req, res) => {
   try {
     const image = await BgImgCarousel.findById(req.params.id);
     if (!image) {
